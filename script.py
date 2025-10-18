@@ -22,6 +22,24 @@ import re
 import hashlib
 from typing import Callable, Iterable, List, Tuple
 
+WHITELABEL = False
+script_name = (
+    get_script_name()
+)  # "nuance.dys" or "alice.dys" if whitelabel and alice points to nuance.dys
+if script_name and script_name != "nuance.dys":
+    WHITELABEL = True
+
+
+########################################
+# Frontend versioning
+########################################
+
+
+VERSION = "develop"
+OWNER = "dysonprotocol"
+REPO = "nuance"
+CDN_TEMPLATE = "https://cdn.jsdelivr.net/gh/{owner}/{repo}@{version}/dist/"
+
 
 class SafeString(str):
     pass
@@ -43,23 +61,18 @@ class SafeTemplate(Template):
             safe_map[k] = v if isinstance(v, SafeString) else html.escape(str(v))
         return Template.safe_substitute(self, safe_map)
 
-WHITELABEL = False
-script_name = (
-    get_script_name()
-)  # "nuance.dys" or "alice.dys" if whitelabel and alice points to nuance.dys
-if script_name and script_name != "nuance.dys":
-    WHITELABEL = True
 
-
-########################################
-# Frontend versioning
-########################################
-
-
-VERSION = "develop"
-OWNER = "dysonprotocol"
-REPO = "nuance"
-CDN_TEMPLATE = "https://cdn.jsdelivr.net/gh/{owner}/{repo}@{version}/dist/"
+def fetch_template(name):
+    q = {
+        "@type": "/dysonprotocol.storage.v1.QueryStorageGetRequest",
+        "owner": get_script_address(),
+        "index": f"templates/{name}",
+    }
+    r = _query(q)
+    entry = r.get("entry")
+    if not entry:
+        return f"<p>Template not found: {name}</p>"
+    return entry.get("data", "")
 
 
 def build_cdn_base(version: str, template: str) -> str:
@@ -75,12 +88,15 @@ def wsgi(environ, start_response):
     p = environ.get("PATH_INFO", "")
     if p == "/host.json":
         # Call /redirect-to-dwapp/{dys name or address}/host.json, follow the redirect to get the HTTP_HOST
-        start_response("200 OK", [
-            ("Content-type", "application/json; charset=utf-8"),
-            ("Access-Control-Allow-Origin", "*"),
-            ("Access-Control-Allow-Methods", "GET, POST, OPTIONS"),
-            ("Access-Control-Allow-Headers", "*"),
-        ])
+        start_response(
+            "200 OK",
+            [
+                ("Content-type", "application/json; charset=utf-8"),
+                ("Access-Control-Allow-Origin", "*"),
+                ("Access-Control-Allow-Methods", "GET, POST, OPTIONS"),
+                ("Access-Control-Allow-Headers", "*"),
+            ],
+        )
         return [
             json.dumps(
                 {"HTTP_HOST": environ["HTTP_HOST"]}, ensure_ascii=False, default=str
@@ -95,19 +111,24 @@ def wsgi(environ, start_response):
         return []
 
     # Load HTML template and substitute variables
-    with open("./storage/templates/index.html", "r") as f:
-        template_content = f.read()
+    template_content = fetch_template("index.html")
     template = SafeTemplate(template_content)
-    html = template.substitute({
-        "context": SafeString(json.dumps({
-            "HTTP_HOST": environ["HTTP_HOST"],
-            "WHITELABEL": WHITELABEL,
-            "SCRIPT_NAME": script_name,
-        })),
-        "cdn_base": SafeString(json.dumps(cdn_base)),
-        "version": SafeString(json.dumps(VERSION)),
-        "cdn_template": SafeString(json.dumps(CDN_TEMPLATE)),
-    })
+    html = template.substitute(
+        {
+            "context": SafeString(
+                json.dumps(
+                    {
+                        "HTTP_HOST": environ["HTTP_HOST"],
+                        "WHITELABEL": WHITELABEL,
+                        "SCRIPT_NAME": script_name,
+                    }
+                )
+            ),
+            "cdn_base": SafeString(json.dumps(cdn_base)),
+            "version": SafeString(json.dumps(VERSION)),
+            "cdn_template": SafeString(json.dumps(CDN_TEMPLATE)),
+        }
+    )
 
     start_response("200 OK", headers)
     return [html.encode()]
@@ -1429,7 +1450,10 @@ def _get_post_reply(post_id: int, reply_post_id: int):
 ### Featured Replies ###
 ########################
 
-def feature_reply(parent_post_id: int, reply_post_id: int, note: str = "", weight: int = 0):
+
+def feature_reply(
+    parent_post_id: int, reply_post_id: int, note: str = "", weight: int = 0
+):
     parent_post_id = int(parent_post_id)
     reply_post_id = int(reply_post_id)
 
@@ -1437,13 +1461,17 @@ def feature_reply(parent_post_id: int, reply_post_id: int, note: str = "", weigh
     parent = _get_data(_get_post_index(parent_post_id))
     author = parent["author"]
     if author != get_caller():
-        assert is_caller_destination_or_owner(author, get_caller()), f'[{get_caller()}] is not authorized for "{author}"'
+        assert is_caller_destination_or_owner(
+            author, get_caller()
+        ), f'[{get_caller()}] is not authorized for "{author}"'
 
     # Relation must exist: reply must be a reply to parent
     try:
         _get_data(_get_rate_index("replies", _format_id(parent_post_id), reply_post_id))
     except Exception as e:
-        raise AssertionError(f"Reply {reply_post_id} is not a reply to post {parent_post_id}: {e}")
+        raise AssertionError(
+            f"Reply {reply_post_id} is not a reply to post {parent_post_id}: {e}"
+        )
 
     idx = _get_featured_replies_index(parent_post_id)
     try:
@@ -1459,7 +1487,9 @@ def feature_reply(parent_post_id: int, reply_post_id: int, note: str = "", weigh
         if not isinstance(note, str):
             raise ValueError(f"Note must be a string, you have: {type(note)}")
         if len(note) > 140:
-            raise ValueError(f"Note too long, max 140 characters, you have: {len(note)}")
+            raise ValueError(
+                f"Note too long, max 140 characters, you have: {len(note)}"
+            )
         rec["items"][key]["note"] = note
     if isinstance(weight, int):
         rec["items"][key]["weight"] = weight
@@ -1476,7 +1506,9 @@ def unfeature_reply(parent_post_id: int, reply_post_id: int):
     parent = _get_data(_get_post_index(parent_post_id))
     author = parent["author"]
     if author != get_caller():
-        assert is_caller_destination_or_owner(author, get_caller()), f'[{get_caller()}] is not authorized for "{author}"'
+        assert is_caller_destination_or_owner(
+            author, get_caller()
+        ), f'[{get_caller()}] is not authorized for "{author}"'
 
     idx = _get_featured_replies_index(parent_post_id)
     try:
@@ -1489,7 +1521,9 @@ def unfeature_reply(parent_post_id: int, reply_post_id: int):
         del rec["items"][key]
         _store_data(idx, rec)
     else:
-        raise AssertionError(f"Reply {reply_post_id} not featured for post {parent_post_id}")
+        raise AssertionError(
+            f"Reply {reply_post_id} not featured for post {parent_post_id}"
+        )
 
 
 def list_featured_replies(parent_post_id: int, offset: int = 0, limit: int = 10):
@@ -1501,6 +1535,7 @@ def list_featured_replies(parent_post_id: int, offset: int = 0, limit: int = 10)
         return []
 
     items = rec.get("items", {})
+
     # sort by weight desc, featured_at desc
     def sort_key(item):
         k, v = item

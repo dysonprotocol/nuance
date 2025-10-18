@@ -1,0 +1,23 @@
+{
+  "index.html": {
+    "file": "assets/index-BKoVRzmU.js",
+    "name": "index",
+    "src": "index.html",
+    "isEntry": true,
+    "dynamicImports": [
+      "src/views/wallets/Wallets.vue"
+    ],
+    "css": [
+      "assets/index-BcjPieZ6.css"
+    ]
+  },
+  "src/views/wallets/Wallets.vue": {
+    "file": "assets/Wallets-BSVoKO4T.js",
+    "name": "Wallets",
+    "src": "src/views/wallets/Wallets.vue",
+    "isDynamicEntry": true,
+    "imports": [
+      "index.html"
+    ]
+  }
+}
