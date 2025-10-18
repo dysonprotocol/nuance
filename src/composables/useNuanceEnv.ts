@@ -1,8 +1,7 @@
-import { ref, computed } from "vue";
-import { useRepo } from "pinia-orm";
-import { useAxiosRepo } from "@pinia-orm/axios";
-import { NameResolution } from "@/orm/models/nameservice/NameResolution";
-
 export function useNuanceEnv() {
-  return { nuanceOwner: import.meta.env.VITE_NUANCE_OWNER };
+  const ctx =
+    (window as unknown as { NUANCE_CTX?: { SCRIPT_NAME?: string } })
+      .NUANCE_CTX || {};
+  const scriptName = String(ctx.SCRIPT_NAME || "nuance.dys");
+  return { nuanceOwner: scriptName };
 }

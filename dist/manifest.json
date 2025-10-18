@@ -1,6 +1,6 @@
 {
   "index.html": {
-    "file": "assets/index-BKoVRzmU.js",
+    "file": "assets/index-DgSA9SJ1.js",
     "name": "index",
     "src": "index.html",
     "isEntry": true,
@@ -8,11 +8,11 @@
       "src/views/wallets/Wallets.vue"
     ],
     "css": [
-      "assets/index-BcjPieZ6.css"
+      "assets/index-pVCTEg1s.css"
     ]
   },
   "src/views/wallets/Wallets.vue": {
-    "file": "assets/Wallets-BSVoKO4T.js",
+    "file": "assets/Wallets-aNQJPZfC.js",
     "name": "Wallets",
     "src": "src/views/wallets/Wallets.vue",
     "isDynamicEntry": true,
