@@ -1,0 +1,11 @@
+*.review
+.venv
+.env
+node_modules/
+.devcontainer/
+.cursor
+AGENT.md
+delivery/
+test-results/
+node_modules
+__pycache__

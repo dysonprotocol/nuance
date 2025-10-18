@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en" class="group/html">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Nuance</title>
+    <meta name="description" content="Make Dwapps, get Paid." />
+    <script>
+      (() => {
+        try {
+          const k = "vueuse-color-scheme";
+          const s = localStorage.getItem(k);
+          const prefersDark = matchMedia(
+            "(prefers-color-scheme: dark)"
+          ).matches;
+          const d = s ? s : prefersDark ? "dark" : "light";
+          const root = document.documentElement;
+          root.classList.remove("dark", "latex-dark", "latex-dark-auto");
+          if (d === "dark") root.classList.add("dark", "latex-dark");
+          else if (d === "auto") {
+            if (prefersDark) root.classList.add("dark");
+            root.classList.add("latex-dark-auto");
+          }
+          console.log("[theme/bootstrap] resolved", { stored: s, applied: d });
+        } catch (e) {
+          console.warn("[theme/bootstrap] error", e);
+        }
+      })();
+      window.NUANCE_CTX = {
+        HTTP_HOST: "http://nuance.localdys.com:5174",
+        WHITELABEL: true,
+        SCRIPT_NAME: "alice.dys",
+      };
+    </script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
